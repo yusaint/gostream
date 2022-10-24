@@ -1,0 +1,3 @@
+[submodule "gostream-contrib"]
+	path = gostream-contrib
+	url = https://github.com/yusaint/gostream-contrib.git
