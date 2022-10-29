@@ -1,6 +1,6 @@
 package ops
 
-import "github.com/yusaint/gostream/streamv3/functions"
+import "github.com/yusaint/gostream/stream/functions"
 
 type IteratorFunc[T any] func(T) error
 

@@ -1,6 +1,6 @@
 package ops
 
-import "github.com/yusaint/gostream/streamv3/functions"
+import "github.com/yusaint/gostream/stream/functions"
 
 type ReduceFunction[T, R any] func(R, T) (R, error)
 
