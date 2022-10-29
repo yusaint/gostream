@@ -1,14 +1,22 @@
-package streamv3
+package stream
 
 import (
 	"github.com/yusaint/gostream/generic"
-	"github.com/yusaint/gostream/streamv3/ops"
+	"github.com/yusaint/gostream/streamv/ops"
 )
 
 type Pipeline struct {
 	op         ops.Op
 	upstream   *Pipeline
 	downstream *Pipeline
+}
+
+func (p *Pipeline) Window(options ...ops.WindowOption) Streams {
+	return p.build(ops.Window(options...))
+}
+
+func (p *Pipeline) Parallel(options ...ops.ParallelOption) Streams {
+	return p.build(ops.Parallel(options...))
 }
 
 func (p *Pipeline) Skip(i int64) Streams {
@@ -35,9 +43,9 @@ func (p *Pipeline) build(op ops.Op) *Pipeline {
 	cur := &Pipeline{
 		op: op,
 	}
+	cur.upstream = p
 	p.op.Link(cur.op)
 	p.downstream = cur
-	cur.upstream = p
 	return cur
 }
 
@@ -68,7 +76,7 @@ func (p *Pipeline) Foreach(op ops.Op) error {
 }
 
 // Stream ...
-func Stream[T any](spl generic.Splittable[T]) Streams {
+func Stream[T any](spl generic.Splittable) Streams {
 	return &Pipeline{
 		op: ops.NewHead(spl),
 	}

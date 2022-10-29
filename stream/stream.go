@@ -1,10 +1,11 @@
-package streamv3
+package stream
 
 import (
-	"github.com/yusaint/gostream/streamv3/ops"
+	"github.com/yusaint/gostream/streamv/ops"
 )
 
 type Streams interface {
+	Parallel(...ops.ParallelOption) Streams
 	Filter(op ops.Op) Streams
 	Reduce(op ops.Op) (any, error)
 	Map(op ops.Op) Streams
@@ -13,4 +14,5 @@ type Streams interface {
 	Limit(int64) Streams
 	Distinct(...ops.Op) Streams
 	Sort(op ops.Op) Streams
+	Window(...ops.WindowOption) Streams
 }

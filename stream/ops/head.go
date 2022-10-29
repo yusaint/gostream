@@ -4,12 +4,12 @@ import (
 	"github.com/yusaint/gostream/generic"
 )
 
-type head[T any] struct {
+type head struct {
 	AbstractOp
-	spl generic.Splittable[T]
+	spl generic.Splittable
 }
 
-func (f *head[T]) Handle() (any, error) {
+func (f *head) Handle() (any, error) {
 	f.Begin(f.spl.EstimatedSize())
 	if err := f.spl.ForeachRemaining(f); err != nil {
 		return nil, err
@@ -17,8 +17,8 @@ func (f *head[T]) Handle() (any, error) {
 	return f.End()
 }
 
-func NewHead[T any](spl generic.Splittable[T]) Op {
-	return &head[T]{
+func NewHead(spl generic.Splittable) Op {
+	return &head{
 		spl: spl,
 	}
 }

@@ -1,5 +1,7 @@
 package ops
 
+import "github.com/yusaint/gostream/streamv3/functions"
+
 type IteratorFunc[T any] func(T) error
 
 type foreach[T any] struct {
@@ -18,3 +20,5 @@ func Foreach[T any](fn IteratorFunc[T]) Op {
 		fn: fn,
 	}
 }
+
+var Print = Foreach(functions.Print)

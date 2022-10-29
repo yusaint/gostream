@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 	"github.com/yusaint/gostream/arrays"
-	"github.com/yusaint/gostream/streamv3"
-	"github.com/yusaint/gostream/streamv3/functions"
-	"github.com/yusaint/gostream/streamv3/ops"
+	"github.com/yusaint/gostream/gostream-contrib/filestream"
+	"github.com/yusaint/gostream/streamv/functions"
+	"github.com/yusaint/gostream/streamv/ops"
+	"os"
 )
 
 func main() {
-	bb()
+	cc()
 }
 
 func bb() {
-	stream := streamv3.Stream[int](arrays.Of(1, 2, 3))
+	stream := streamv.Stream[int](arrays.Of(1, 2, 3))
 	sum, err := stream.
 		Filter(ops.Filter(func(t int) (bool, error) { return t > -1, errors.New("aaaaa") })).
 		Distinct().
@@ -26,4 +27,12 @@ func bb() {
 	} else {
 		fmt.Println(sum)
 	}
+}
+
+func cc() {
+	f, err := os.Open("./demo.csv")
+	if err != nil {
+		panic(err)
+	}
+	streamv.Stream[[]string](filestream.NewCsvFileStream(f)).Foreach(ops.Print)
 }
