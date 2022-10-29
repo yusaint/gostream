@@ -2,7 +2,7 @@ package stream
 
 import (
 	"github.com/yusaint/gostream/generic"
-	"github.com/yusaint/gostream/streamv/ops"
+	"github.com/yusaint/gostream/stream/ops"
 )
 
 type Pipeline struct {
