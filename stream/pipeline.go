@@ -11,6 +11,11 @@ type Pipeline struct {
 	downstream *Pipeline
 }
 
+func (p *Pipeline) Collect(op ops.Op) {
+	p.build(op)
+	p.evaluate()
+}
+
 func (p *Pipeline) Window(options ...ops.WindowOption) Streams {
 	return p.build(ops.Window(options...))
 }

@@ -1,6 +1,9 @@
 package ops
 
-import "golang.org/x/exp/rand"
+import (
+	"golang.org/x/exp/rand"
+	"sync"
+)
 
 // WorkerStrategy define the concurrent model
 type WorkerStrategy int
@@ -35,7 +38,8 @@ type _parallel struct {
 	impl worker
 }
 
-func (p *_parallel) Link(next Op) { p.downstream = next; p.impl.Link(next) }
+func (p *_parallel) End() (any, error) { p.impl.Wait(); return p.downstream.End() }
+func (p *_parallel) Link(next Op)      { p.downstream = next; p.impl.Link(next) }
 func (p *_parallel) Accept(a any) error {
 	p.impl.AcceptMessage(a)
 	return nil
@@ -44,10 +48,16 @@ func (p *_parallel) Accept(a any) error {
 type worker interface {
 	Link(downstream Op)
 	AcceptMessage(m any)
+	Wait()
 }
 
 type bufferPoolWorker struct {
 	downstream Op
+	waitG      sync.WaitGroup
+}
+
+func (b *bufferPoolWorker) Wait() {
+	b.waitG.Wait()
 }
 
 func (b *bufferPoolWorker) Link(downstream Op) {
@@ -55,7 +65,11 @@ func (b *bufferPoolWorker) Link(downstream Op) {
 }
 
 func (b *bufferPoolWorker) AcceptMessage(m any) {
-	go b.downstream.Accept(m)
+	b.waitG.Add(1)
+	go func() {
+		defer b.waitG.Done()
+		b.downstream.Accept(m)
+	}()
 }
 
 type Hasher func(m any, size int) int
@@ -69,6 +83,11 @@ type fixedPoolWorker struct {
 	poolSize   int
 	hasher     Hasher
 	runq       []chan any
+	waitG      sync.WaitGroup
+}
+
+func (f *fixedPoolWorker) Wait() {
+	f.waitG.Wait()
 }
 
 func (f *fixedPoolWorker) Link(downstream Op) {
@@ -83,6 +102,7 @@ func (f *fixedPoolWorker) loop() {
 				select {
 				case m := <-f.runq[index]:
 					f.downstream.Accept(m)
+					f.waitG.Done()
 				}
 			}
 		}(i)
@@ -101,6 +121,7 @@ func newFixedPoolWorker(size int) *fixedPoolWorker {
 
 func (f *fixedPoolWorker) AcceptMessage(m any) {
 	index := f.hasher(m, f.poolSize)
+	f.waitG.Add(1)
 	f.runq[index] <- m
 }
 

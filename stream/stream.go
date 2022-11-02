@@ -15,4 +15,5 @@ type Streams interface {
 	Distinct(...ops.Op) Streams
 	Sort(op ops.Op) Streams
 	Window(...ops.WindowOption) Streams
+	Collect(op ops.Op)
 }

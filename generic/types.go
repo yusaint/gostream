@@ -7,3 +7,7 @@ type Comparable[T any] interface {
 type ElemType interface {
 	any
 }
+
+type Collect[T any] interface {
+	Add(e T) bool
+}

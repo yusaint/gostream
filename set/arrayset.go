@@ -4,9 +4,7 @@ import (
 	"sync"
 )
 
-type IntArraySet struct {
-	ArraySet[int]
-}
+type IntArraySet = ArraySet[int]
 
 type ArraySet[T any] struct {
 	array []T
