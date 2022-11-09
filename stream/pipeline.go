@@ -11,6 +11,10 @@ type Pipeline struct {
 	downstream *Pipeline
 }
 
+func (p *Pipeline) Group(op ops.Op) Streams {
+	return p.build(op)
+}
+
 func (p *Pipeline) Collect(op ops.Op) {
 	p.build(op)
 	p.evaluate()

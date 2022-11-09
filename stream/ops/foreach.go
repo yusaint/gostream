@@ -22,3 +22,5 @@ func Foreach[T any](fn IteratorFunc[T]) Op {
 }
 
 var Print = Foreach(functions.Print)
+
+var PrintJson = Foreach(functions.PrintJson)
