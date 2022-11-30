@@ -1,19 +1,50 @@
 package set
 
 import (
+	"github.com/yusaint/gostream/generic"
+	"reflect"
 	"sync"
 )
 
 type IntArraySet = ArraySet[int]
+type StringArraySet = ArraySet[string]
 
 type ArraySet[T any] struct {
 	array []T
-	lock  sync.Mutex
+	lock  sync.RWMutex
+	index int
 }
 
-func (a *ArraySet[T]) New() Set[T] {
-	a.array = make([]T, 0, 10)
-	return a
+func (a *ArraySet[T]) EstimatedSize() int64 {
+	return int64(len(a.array))
+}
+
+func (a *ArraySet[T]) ForeachRemaining(sink generic.Consumer) error {
+	for {
+		isContinue, err := a.TryAdvance(sink)
+		if err != nil {
+			return err
+		} else {
+			if !isContinue {
+				return nil
+			}
+		}
+	}
+}
+
+func (a *ArraySet[T]) TryAdvance(sink generic.Consumer) (bool, error) {
+	if err := sink.Accept(a.array[a.index]); err != nil {
+		return false, err
+	}
+	a.index++
+	return a.index < len(a.array), nil
+}
+
+func NewArraySet[T any]() Set[T] {
+	arr := &ArraySet[T]{
+		array: make([]T, 0),
+	}
+	return arr
 }
 
 func (a *ArraySet[T]) ToArray() []T {
@@ -22,7 +53,9 @@ func (a *ArraySet[T]) ToArray() []T {
 
 func (a *ArraySet[T]) indexOf(e any) int {
 	for i := 0; i < len(a.array); i++ {
-
+		if reflect.DeepEqual(e, a.array[i]) {
+			return i
+		}
 	}
 	return -1
 }
@@ -30,7 +63,6 @@ func (a *ArraySet[T]) indexOf(e any) int {
 func (a *ArraySet[T]) Add(e T) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-
 	if a.indexOf(e) == -1 {
 		a.array = append(a.array, e)
 		return true
@@ -39,10 +71,14 @@ func (a *ArraySet[T]) Add(e T) bool {
 }
 
 func (a *ArraySet[T]) Contains(e T) bool {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
 	return a.indexOf(e) >= 0
 }
 
 func (a *ArraySet[T]) Size() int {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
 	return len(a.array)
 }
 
@@ -69,6 +105,8 @@ func (a *ArraySet[T]) Remove(e T) bool {
 }
 
 func (a *ArraySet[T]) Clear() bool {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	a.array = []T{}
 	return true
 }

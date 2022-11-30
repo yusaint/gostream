@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yusaint/gostream/gostream-contrib/filestream"
+	"github.com/yusaint/gostream-contrib/filestream"
 	"github.com/yusaint/gostream/stream"
 	"github.com/yusaint/gostream/stream/ops"
 	"os"
@@ -12,6 +12,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	type Record struct {
+		R1 string
+		R2 string
+		R3 string
+	}
+
 	stream.Stream[[]string](filestream.NewCsvFileStream(f)).
 		Map(ops.Map(func(row []string) (*Record, error) {
 			return &Record{
