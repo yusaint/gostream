@@ -42,9 +42,8 @@ func (f *comparatorDistinct[T, R]) Accept(a any) error {
 type HashCodeFunc[T any, R comparable] func(T) (R, error)
 
 func NewDistinct[T any, R comparable](hashcode HashCodeFunc[T, R]) Op {
-	s := &set.HashSet[R]{}
 	return &comparatorDistinct[T, R]{
-		set:      s.New(),
+		set:      set.NewHashSet[R](),
 		hashcode: hashcode,
 	}
 }
