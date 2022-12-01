@@ -1,6 +1,9 @@
 package hash
 
+import "github.com/yusaint/gostream/generic"
+
 type Hash[T comparable, R any] interface {
+	generic.Splittable
 	ToArray() []R
 	Add(T, R) bool
 	Contains(e T) bool
