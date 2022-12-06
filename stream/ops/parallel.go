@@ -1,8 +1,9 @@
 package ops
 
 import (
-	"golang.org/x/exp/rand"
-	"sync"
+	"fmt"
+	"golang.org/x/sync/errgroup"
+	"runtime"
 )
 
 // WorkerStrategy define the concurrent model
@@ -19,9 +20,8 @@ const (
 )
 
 type parallelConfig struct {
-	strategy          WorkerStrategy
-	poolSize          int
-	enableWorkerSteel bool
+	strategy WorkerStrategy
+	poolSize int
 }
 
 type ParallelOption func(config *parallelConfig)
@@ -38,8 +38,13 @@ type _parallel struct {
 	impl worker
 }
 
-func (p *_parallel) End() (any, error) { p.impl.Wait(); return p.downstream.End() }
-func (p *_parallel) Link(next Op)      { p.downstream = next; p.impl.Link(next) }
+func (p *_parallel) End() (any, error) {
+	if err := p.impl.Wait(); err != nil {
+		return nil, err
+	}
+	return p.downstream.End()
+}
+func (p *_parallel) Link(next Op) { p.downstream = next; p.impl.Link(next) }
 func (p *_parallel) Accept(a any) error {
 	p.impl.AcceptMessage(a)
 	return nil
@@ -48,16 +53,16 @@ func (p *_parallel) Accept(a any) error {
 type worker interface {
 	Link(downstream Op)
 	AcceptMessage(m any)
-	Wait()
+	Wait() error
 }
 
 type bufferPoolWorker struct {
 	downstream Op
-	waitG      sync.WaitGroup
+	eg         errgroup.Group
 }
 
-func (b *bufferPoolWorker) Wait() {
-	b.waitG.Wait()
+func (b *bufferPoolWorker) Wait() error {
+	return b.eg.Wait()
 }
 
 func (b *bufferPoolWorker) Link(downstream Op) {
@@ -65,69 +70,28 @@ func (b *bufferPoolWorker) Link(downstream Op) {
 }
 
 func (b *bufferPoolWorker) AcceptMessage(m any) {
-	b.waitG.Add(1)
-	go func() {
-		defer b.waitG.Done()
-		b.downstream.Accept(m)
-	}()
-}
-
-type Hasher func(m any, size int) int
-
-var defaultHasher = func(m any, size int) int {
-	return rand.Intn(size)
-}
-
-type fixedPoolWorker struct {
-	downstream Op
-	poolSize   int
-	hasher     Hasher
-	runq       []chan any
-	waitG      sync.WaitGroup
-}
-
-func (f *fixedPoolWorker) Wait() {
-	f.waitG.Wait()
-}
-
-func (f *fixedPoolWorker) Link(downstream Op) {
-	f.downstream = downstream
-}
-
-func (f *fixedPoolWorker) loop() {
-	for i := 0; i < f.poolSize; i++ {
-		f.runq[i] = make(chan any, 1)
-		go func(index int) {
-			for {
-				select {
-				case m := <-f.runq[index]:
-					f.downstream.Accept(m)
-					f.waitG.Done()
-				}
+	b.eg.Go(func() error {
+		var err error
+		defer func() {
+			if e := recover(); e != nil {
+				err = fmt.Errorf("%v", e)
 			}
-		}(i)
-	}
+		}()
+		err = b.downstream.Accept(m)
+		return err
+	})
 }
 
-func newFixedPoolWorker(size int) *fixedPoolWorker {
-	w := &fixedPoolWorker{
-		poolSize: size,
-		hasher:   defaultHasher,
-		runq:     make([]chan any, size),
-	}
-	w.loop()
+func newFixedPoolWorker(size int) *bufferPoolWorker {
+	w := &bufferPoolWorker{}
+	w.eg.SetLimit(size)
 	return w
-}
-
-func (f *fixedPoolWorker) AcceptMessage(m any) {
-	index := f.hasher(m, f.poolSize)
-	f.waitG.Add(1)
-	f.runq[index] <- m
 }
 
 func Parallel(options ...ParallelOption) Op {
 	cfg := parallelConfig{
-		strategy: BufferPoolStrategy,
+		strategy: FixedPoolStrategy,
+		poolSize: runtime.NumCPU(),
 	}
 	for _, opt := range options {
 		opt(&cfg)

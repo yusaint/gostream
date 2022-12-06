@@ -49,7 +49,7 @@ func (f *flipWindow[T]) WindowContents() []T {
 func (f *_window[T]) Begin(i int64)     {}
 func (f *_window[T]) End() (any, error) { return f.downstream.End() }
 func (f *_window[T]) Accept(a any) error {
-	isFull := f.impl.IsFull(a)
+	isFull := f.impl.IsFull(a.(T))
 	if !isFull {
 		return nil
 	}
@@ -57,6 +57,6 @@ func (f *_window[T]) Accept(a any) error {
 	if err := f.downstream.Accept(f.impl.WindowContents()); err != nil {
 		return err
 	}
-	f.impl.MoveOn(a)
+	f.impl.MoveOn(a.(T))
 	return nil
 }
