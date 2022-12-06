@@ -14,7 +14,7 @@ type Streams interface {
 	Limit(int64) Streams
 	Distinct(...ops.Op) Streams
 	Sort(op ops.Op) Streams
-	Window(...ops.WindowOption) Streams
+	Window(op ops.Op) Streams
 	Collect(op ops.Op)
 	Group(op ops.Op) Streams
 }

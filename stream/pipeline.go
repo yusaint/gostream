@@ -20,8 +20,8 @@ func (p *Pipeline) Collect(op ops.Op) {
 	p.evaluate()
 }
 
-func (p *Pipeline) Window(options ...ops.WindowOption) Streams {
-	return p.build(ops.Window(options...))
+func (p *Pipeline) Window(op ops.Op) Streams {
+	return p.build(op)
 }
 
 func (p *Pipeline) Parallel(options ...ops.ParallelOption) Streams {
