@@ -46,8 +46,16 @@ func (f *flipWindow[T]) IsFull(t T) bool {
 func (f *flipWindow[T]) WindowContents() []T {
 	return f.container
 }
-func (f *_window[T]) Begin(i int64)     {}
-func (f *_window[T]) End() (any, error) { return f.downstream.End() }
+func (f *_window[T]) Begin(i int64) {}
+func (f *_window[T]) End() (any, error) {
+	// in case we have some data left in the window,need to notify downstream at the final
+	if f.impl.Size() > 0 {
+		if err := f.downstream.Accept(f.impl.WindowContents()); err != nil {
+			return nil, err
+		}
+	}
+	return f.downstream.End()
+}
 func (f *_window[T]) Accept(a any) error {
 	isFull := f.impl.IsFull(a.(T))
 	if !isFull {
