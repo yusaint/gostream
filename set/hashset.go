@@ -22,6 +22,9 @@ func (h *HashSet[T]) EstimatedSize() int64 {
 func (h *HashSet[T]) ForeachRemaining(sink generic.Consumer) error {
 	h.hmap.Front()
 	for {
+		if h.EstimatedSize() == 0 {
+			return nil
+		}
 		isContinue, err := h.TryAdvance(sink)
 		if err != nil {
 			return err

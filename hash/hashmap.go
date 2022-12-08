@@ -43,6 +43,9 @@ func (m *Map[T, R]) EstimatedSize() int64 {
 func (m *Map[T, R]) ForeachRemaining(sink generic.Consumer) error {
 	m.iterator = m.l.Front()
 	for {
+		if m.iterator == nil {
+			return nil
+		}
 		isContinue, err := m.TryAdvance(sink)
 		if err != nil {
 			return err

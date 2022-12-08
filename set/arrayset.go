@@ -21,6 +21,9 @@ func (a *ArraySet[T]) EstimatedSize() int64 {
 
 func (a *ArraySet[T]) ForeachRemaining(sink generic.Consumer) error {
 	for {
+		if a.EstimatedSize() == 0 {
+			return nil
+		}
 		isContinue, err := a.TryAdvance(sink)
 		if err != nil {
 			return err
