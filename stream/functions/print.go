@@ -10,4 +10,5 @@ func Println[T any](a T) {
 }
 
 var Print = func(e any) error { Println(e); return nil }
+var Noop = func(e any) error { return nil }
 var PrintJson = func(e any) error { v, _ := json.Marshal(e); fmt.Println(string(v)); return nil }

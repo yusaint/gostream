@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/sync/errgroup"
 	"runtime"
+	"runtime/debug"
 )
 
 // WorkerStrategy define the concurrent model
@@ -70,15 +71,15 @@ func (b *bufferPoolWorker) Link(downstream Op) {
 }
 
 func (b *bufferPoolWorker) AcceptMessage(m any) {
-	b.eg.Go(func() error {
-		var err error
+	b.eg.Go(func() (err error) {
 		defer func() {
 			if e := recover(); e != nil {
 				err = fmt.Errorf("%v", e)
+				debug.PrintStack()
 			}
 		}()
 		err = b.downstream.Accept(m)
-		return err
+		return
 	})
 }
 

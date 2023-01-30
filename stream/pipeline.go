@@ -11,13 +11,29 @@ type Pipeline struct {
 	downstream *Pipeline
 }
 
+func (p *Pipeline) Peek(op ops.Op) Streams {
+	return p.build(op)
+}
+
+func (p *Pipeline) Join(sinkable Streams, op ops.JoinOp) Streams {
+	op.SetJoinStream(sinkable)
+	return p.build(op)
+}
+
+func (p *Pipeline) Sink(consumer generic.Consumer) error {
+	var pe = p.build(ops.NewTail())
+	for ; pe.upstream != nil; pe = pe.upstream {
+	}
+	_, err := pe.op.Handle(consumer)
+	return err
+}
+
 func (p *Pipeline) Group(op ops.Op) Streams {
 	return p.build(op)
 }
 
 func (p *Pipeline) Collect(op ops.Op) {
-	p.build(op)
-	p.evaluate()
+	p.build(op).evaluate()
 }
 
 func (p *Pipeline) Window(op ops.Op) Streams {
@@ -59,10 +75,10 @@ func (p *Pipeline) build(op ops.Op) *Pipeline {
 }
 
 func (p *Pipeline) evaluate() (any, error) {
-	var pe *Pipeline
-	for pe = p; pe.upstream != nil; pe = pe.upstream {
+	var pe = p.build(ops.NewTail())
+	for ; pe.upstream != nil; pe = pe.upstream {
 	}
-	return pe.op.Handle()
+	return pe.op.Handle(pe.op)
 }
 
 func (p *Pipeline) Filter(op ops.Op) Streams {
@@ -74,13 +90,11 @@ func (p *Pipeline) Map(op ops.Op) Streams {
 }
 
 func (p *Pipeline) Reduce(op ops.Op) (any, error) {
-	p.build(op)
-	return p.evaluate()
+	return p.build(op).evaluate()
 }
 
 func (p *Pipeline) Foreach(op ops.Op) error {
-	p.build(op)
-	_, err := p.evaluate()
+	_, err := p.build(op).evaluate()
 	return err
 }
 
